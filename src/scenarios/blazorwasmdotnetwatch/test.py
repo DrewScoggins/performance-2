@@ -14,7 +14,11 @@ if __name__ == "__main__":
                         projext = '.csproj',
                         processwillexit='false',
                         measurementdelay='20',
+<<<<<<< HEAD
                         iterations='5',
                         runwithoutexit='true'
+=======
+                        iterations='3'
+>>>>>>> 6d63bdfb... Add dotnet watch with hot reload scenario
                         )
     Runner(traits).run()
