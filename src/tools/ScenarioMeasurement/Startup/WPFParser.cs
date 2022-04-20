@@ -24,8 +24,9 @@ namespace ScenarioMeasurement
             double threadTime = 0;
             var ins = new Dictionary<int, double>();
             double start = -1;
+            double stopTracker = 0;
             int? pid = null;
-            bool doneParsingXaml = false;
+            bool doneValueValid = false;
             using (var source = new ETWTraceEventSource(mergeTraceFile))
             {
 
@@ -65,26 +66,37 @@ namespace ScenarioMeasurement
                     }
                 };
 
-                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Windows-WPF", "WClientParseBaml/Stop", evt =>
+                // Reset Present/stop time when Info is found, Use process/stop to flush everything (Add to the events)
+                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Windows-WPF", "WClientParseXamlBamlInfo", evt =>
                 {
                     if (pid.HasValue && evt.ProcessID == pid && evt.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
                     {
-                        doneParsingXaml = true;
+                        doneValueValid = false;
                     }
                 });
 
                 source.Dynamic.AddCallbackForProviderEvent("Microsoft-Windows-WPF", "WClientUcePresent/Stop", evt =>
                 {
-                    if (doneParsingXaml && pid.HasValue && evt.ProcessID == pid && evt.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                    if (!doneValueValid && pid.HasValue && evt.ProcessID == pid && evt.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
                     {
-                        results.Add(evt.TimeStampRelativeMSec - start);
+                        stopTracker = evt.TimeStampRelativeMSec; // Capture first Present/Stop after the last WClientParseXamlBamlInfo
+                        doneValueValid = true;
+                    }
+                });
+
+                source.Kernel.ProcessStop += evt =>
+                {
+                    if (doneValueValid && pid.HasValue && evt.ProcessID == pid && evt.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Do we want to fail if doneValueValid is false?
+                        results.Add(stopTracker - start);
                         threadTimes.Add(threadTime);
                         pid = null;
                         threadTime = 0;
                         start = 0;
-                        doneParsingXaml = false;
+                        doneValueValid = false;
                     }
-                });
+                };
 
                 source.Process();
             }
