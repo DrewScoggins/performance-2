@@ -307,7 +307,7 @@ class CSharpProject:
         cmdline = [
             'dotnet', 'restore',
             self.csproj_file,
-            '--packages', packages_path,
+            '--packages', packages_path, '--verbosity diag',
             '/p:UseSharedCompilation=false', '/p:BuildInParallel=false', '/m:1',
         ]
 
