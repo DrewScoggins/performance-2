@@ -334,7 +334,7 @@ class CSharpProject:
                 'dotnet', 'build',
                 self.csproj_file,
                 '--configuration', configuration,
-                '--no-restore',
+                '--no-restore', '--verbosity', 'diag',
                 "/p:NuGetPackageRoot={}".format(packages_path),
                 "/p:RestorePackagesPath={}".format(packages_path),
                 '/p:UseSharedCompilation=false', '/p:BuildInParallel=false', '/m:1',
