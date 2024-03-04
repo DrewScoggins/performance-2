@@ -414,13 +414,22 @@ def main(args: Any):
     if args.r2r_status == 'nor2r':
         r2r_config = variable_format % ('DOTNET_ReadyToRun', '0')
 
+    getLogger().info('*********************************************')
+    getLogger().info('Experiment Name: %s' % args.experiment_name)
+    getLogger().info('Experiment check value rlcse: %s' % (args.experiment_name == "rlsce"))
+    getLogger().info('Experiment check value gdv3: %s' % (args.experiment_name == "gdv3"))
+
     if args.experiment_name == "crossblocklocalassertionprop":
         experiment_config = variable_format % ('DOTNET_JitEnableCrossBlockLocalAssertionProp', '1')
     elif args.experiment_name == "gdv3":
         experiment_config = variable_format % ('DOTNET_JitGuardedDevirtualizationMaxTypeChecks', '3')
+        getLogger().info('Experiment Config value: %s' % experiment_config)
+        getLogger().info('Variable Format Generated Value: %s' % (variable_format % ('DOTNET_JitGuardedDevirtualizationMaxTypeChecks', '3')))
     elif args.experiment_name == "rlcse":
         experiment_config = variable_format % ('DOTNET_JitRLCSEGreedy', '1')
-
+        getLogger().info('Experiment Config value: %s' % experiment_config)
+        getLogger().info('Variable Format Generated Value: %s' % (variable_format % ('DOTNET_JitRLCSEGreedy', '1')))
+    getLogger().info('*********************************************')
     output = ''
 
     with push_dir(get_repo_root_path()):
@@ -473,6 +482,9 @@ def main(args: Any):
             out_file.write(pgo_config)
             out_file.write(physical_promotion_config)
             out_file.write(r2r_config)
+            getLogger().info('*********************************************')
+            getLogger().info('Experiment Config value: %s' % experiment_config)
+            getLogger().info('*********************************************')
             out_file.write(experiment_config)
             out_file.write(variable_format % ('PERFLAB_INLAB', '0' if args.not_in_lab else '1'))
             out_file.write(variable_format % ('PERFLAB_REPO', '/'.join([owner, repo])))
