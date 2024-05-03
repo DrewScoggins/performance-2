@@ -21,8 +21,11 @@ def upload(globpath: str, container: str, queue: str, sas_token_env: str, storag
     try:
         default_cred = DefaultAzureCredential()
         if default_cred is None:
-            getLogger().error("Failed to acquire default cred")
-            return 1
+            getLogger().error("Falling back to sas token")
+            default_cred = os.getenv(sas_token_env)
+            if default_cred is None:
+                getLogger().error("Sas token environment variable {} was not defined.".format(sas_token_env))
+                return 1
 
         files = glob(globpath, recursive=True)
         any_upload_or_queue_failed = False
