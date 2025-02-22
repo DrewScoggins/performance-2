@@ -77,6 +77,14 @@ jobs:
   - template: /eng/pipelines/performance/templates/perf-build-jobs.yml@${{ parameters.runtimeRepoAlias }}
     parameters:
       perfBranch: ${{ parameters.perfBranch }}
+  - task: AzureFileCopy@4
+    inputs:
+      SourcePath: '$(Pipeline.Workspace)/artifacts'
+      azureSubscription: .NET Performance (790c4451-dad9-4fda-af8b-10bd9ca328fa)
+      Destination: 'AzureBlob'
+      storage: 'pvscmdupload'
+      ContainerName: 'your-container-name'
+      BlobPrefix: 'your-blob-prefix'
 
   # # Build and run iOS Mono and NativeAOT scenarios
   # - template: /eng/pipelines/runtime-ios-scenarios-perf-jobs.yml
