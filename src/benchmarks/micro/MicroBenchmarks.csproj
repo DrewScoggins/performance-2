@@ -22,6 +22,7 @@
 
     <!-- Allow building with one major version, and running using a sdk with a higher major version -->
     <RollForward Condition="'$(BuildingForWasm)' == 'true'">LatestMajor</RollForward>
+    <WasmBuildNative Condition="'$(BuildingForWasm)' == 'true'">true</WasmBuildNative>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
