@@ -58,6 +58,7 @@ parameters:
   additionalSetupParameters: ''     # optional -- Additional arguments to pass to the script
   liveLibrariesBuildConfig: ''      # optional -- Build configuration when generating Core_Root for libraries
   crossBuild: false                 # optional -- Whether the Core_Root is being cross-compiled
+  testFilter: ''                    # optional -- Test filter to run specific benchmarks
 
 jobs:
 - template: ${{ parameters.jobTemplate }}
@@ -234,6 +235,8 @@ jobs:
               - '--live-libraries-build-config ${{ parameters.liveLibrariesBuildConfig }}'
             - ${{ if eq(parameters.crossBuild, true) }}:
               - '--cross-build'
+            - ${{ if ne(parameters.testFilter, '') }}:
+              - '--test-filter "${{ parameters.testFilter }}"'
             - ${{ if ne(parameters.additionalSetupParameters, '') }}:
               - '${{ parameters.additionalSetupParameters }}'
       - template: /eng/pipelines/templates/send-to-helix-step.yml

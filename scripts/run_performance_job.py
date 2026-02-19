@@ -118,6 +118,7 @@ class RunPerformanceJobArgs:
     build_config: str = DEFAULT_BUILD_CONFIG
     live_libraries_build_config: Optional[str] = None
     cross_build: bool = False
+    test_filter: Optional[str] = None
 
 def get_pre_commands(
         os_group: str,
@@ -390,7 +391,8 @@ def get_bdn_arguments(
         javascript_engine_path: Optional[str] = None,
         product_version: Optional[str] = None,
         corerun_payload_dir: Optional[str] = None,
-        extra_bdn_args: Optional[str] = None) -> list[str]:
+        extra_bdn_args: Optional[str] = None,
+        test_filter: Optional[str] = None) -> list[str]:
     bdn_arguments = ["--anyCategories", run_categories]
 
     if affinity is not None and not "0":
@@ -458,6 +460,9 @@ def get_bdn_arguments(
 
     if only_sanity_check:
         bdn_arguments += ["--filter", "System.Tests.Perf_*"]
+
+    if test_filter:
+        bdn_arguments += ["--filter", test_filter]
 
     if runtime_type == "mono" and not is_aot:
         assert product_version is not None
@@ -1140,7 +1145,8 @@ def run_performance_job(args: RunPerformanceJobArgs):
             args.javascript_engine_path,
             product_version,
             coreroot_dir,
-            args.extra_bdn_args
+            args.extra_bdn_args,
+            args.test_filter
         )
 
     bdn_arguments = get_bdn_args_for_coreroot_dir(coreroot_dir="Core_Root" if use_core_run else None)
@@ -1319,7 +1325,8 @@ def main(argv: list[str]):
                 "--runtime-repo-dir": "runtime_repo_dir",
                 "--logical-machine": "logical_machine",
                 "--build-config": "build_config",
-                "--live-libraries-build-config": "live_libraries_build_config"
+                "--live-libraries-build-config": "live_libraries_build_config",
+                "--test-filter": "test_filter"
             }
 
             if key in simple_arg_map:
