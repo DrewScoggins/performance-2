@@ -11,10 +11,11 @@ parameters:
   - name: performanceRepoAlias
     type: string
     default: self
+  # TEMP crossgen-only: all non-crossgen legs disabled to avoid overloading lab queues. Revert to re-enable.
   - name: viperMicro
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_x64
         - windows_x64
@@ -22,68 +23,68 @@ parameters:
   - name: viperMicroRuntimeAsync
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_x64
         - windows_x64
   - name: cobaltMicroRuntimeAsync
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_arm64
   - name: monoMicro
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_x64
   - name: monoInterpreter
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_x64
   - name: monoAot
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_x64
   - name: androidCoreclrJit
     type: object
     default:
-      enabled: true
+      enabled: false
   - name: cobaltMicro
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_arm64
   - name: cobaltSveMicro
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_arm64
   - name: cobaltMicroR2RInterpreter
     type: object
     default:
-      enabled: true
+      enabled: false
       configs:
         - linux_arm64
   - name: androidCoreclrR2r
     type: object
     default:
-      enabled: true
+      enabled: false
 
 jobs:
   - template: /eng/pipelines/performance/templates/perf-build-jobs.yml@${{ parameters.runtimeRepoAlias }}
     parameters:
       perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if not(startswith(variables['Build.SourceBranch'], 'refs/heads/release')) }}:
-    # Build and run iOS CoreCLR and NativeAOT scenarios
+  # TEMP crossgen-only: iOS/Android scenario legs disabled. Revert `false` -> `not(startswith(...release))` to re-enable.
+  - ${{ if false }}:
     - template: /eng/pipelines/runtime-ios-scenarios-perf-jobs.yml
       parameters:
         runtimeRepoAlias: ${{ parameters.runtimeRepoAlias }}
@@ -331,22 +332,21 @@ jobs:
             ${{ parameter.key }}: ${{ parameter.value }}
 
   # run coreclr crossgen perf job
-  - ${{ if false }}: # Disabling as all crossgen jobs are failing at the moment - https://github.com/dotnet/performance/issues/4819
-    - template: /eng/pipelines/common/platform-matrix.yml@${{ parameters.runtimeRepoAlias }}
-      parameters:
-        jobTemplate: /eng/pipelines/templates/runtime-perf-job.yml@${{ parameters.performanceRepoAlias }}
-        buildConfig: release
-        runtimeFlavor: coreclr
-        platforms:
-        - windows_x64
-        - windows_x86
-        jobParameters:
-          liveLibrariesBuildConfig: Release
-          projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
-          runKind: crossgen_scenarios
-          isScenario: true
-          logicalMachine: 'perftiger_crossgen' # Update when re-enabling as PerfTiger is now fewer machines (or completely decommissioned)
-          runtimeRepoAlias: ${{ parameters.runtimeRepoAlias }}
-          performanceRepoAlias: ${{ parameters.performanceRepoAlias }}
-          ${{ each parameter in parameters.jobParameters }}:
-            ${{ parameter.key }}: ${{ parameter.value }}
+  - template: /eng/pipelines/common/platform-matrix.yml@${{ parameters.runtimeRepoAlias }}
+    parameters:
+      jobTemplate: /eng/pipelines/templates/runtime-perf-job.yml@${{ parameters.performanceRepoAlias }}
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      - windows_x86
+      jobParameters:
+        liveLibrariesBuildConfig: Release
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
+        runKind: crossgen_scenarios
+        isScenario: true
+        logicalMachine: 'perfviper'
+        runtimeRepoAlias: ${{ parameters.runtimeRepoAlias }}
+        performanceRepoAlias: ${{ parameters.performanceRepoAlias }}
+        ${{ each parameter in parameters.jobParameters }}:
+          ${{ parameter.key }}: ${{ parameter.value }}

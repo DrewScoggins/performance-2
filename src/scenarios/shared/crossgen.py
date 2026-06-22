@@ -7,7 +7,8 @@ import os
 
 from logging import getLogger
 from argparse import ArgumentParser
-from typing import Any, Optional
+from typing import Any, List, Optional
+from performance.common import extension
 from shared import const
 
 class CrossgenArguments:
@@ -185,6 +186,31 @@ Suppress internal Crossgen2 parallelism
 
     def crossgen2_compiletype(self):
         return const.CROSSGEN2_COMPOSITE if self.compositefile else const.CROSSGEN2_SINGLEFILE
+
+    def crossgen2_apptorun(self) -> str:
+        """Path to the process used to launch crossgen2.
+
+        Modern Core_Root ships crossgen2 as a native executable
+        (crossgen2/crossgen2[.exe]). Older layouts shipped a managed
+        crossgen2.dll that must be launched via corerun. Prefer the native
+        executable when present, falling back to corerun for the managed dll.
+        """
+        if os.path.exists(self._crossgen2_native_path()):
+            return self._crossgen2_native_path()
+        return os.path.join(self.coreroot, 'corerun%s' % extension())
+
+    def crossgen2_host_args(self) -> List[str]:
+        """Leading args needed to host crossgen2.
+
+        Empty when launching the native executable directly; the managed
+        crossgen2.dll path when falling back to corerun.
+        """
+        if os.path.exists(self._crossgen2_native_path()):
+            return []
+        return [os.path.join(self.coreroot, 'crossgen2', 'crossgen2.dll')]
+
+    def _crossgen2_native_path(self) -> str:
+        return os.path.join(self.coreroot, 'crossgen2', 'crossgen2%s' % extension())
 
     def crossgen2_scenario_filename(self) -> str:
         "Returns the name of the assembly being compiled or composite image generated, without file extension"

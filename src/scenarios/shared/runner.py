@@ -436,15 +436,16 @@ ex: C:\repos\performance;C:\repos\runtime
                 self.traits.add_traits(overwrite=True,
                                        skipprofile='true')
 
+            host_args = self.crossgen_arguments.crossgen2_host_args()
             self.traits.add_traits(overwrite=True,
                                    startupmetric=const.STARTUP_CROSSGEN2,
                                    workingdir=self.crossgen_arguments.coreroot,
-                                   appargs='%s %s' % (os.path.join('crossgen2', 'crossgen2.dll'), ' '.join(crossgen2args)),
+                                   appargs=' '.join(host_args + crossgen2args),
                                    affinity=self.affinity
                                    )
             self.traits.add_traits(overwrite=False,
                                    scenarioname=scenarioname,
-                                   apptorun=os.path.join(self.crossgen_arguments.coreroot, 'corerun%s' % extension()),
+                                   apptorun=self.crossgen_arguments.crossgen2_apptorun(),
                                    environmentvariables='COMPlus_EnableEventLog=1' if not iswin() else '' # turn on clr user events
                                   ) 
             startup.runtests(self.traits)

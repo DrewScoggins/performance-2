@@ -216,9 +216,9 @@ class PreCommands:
             RunCommand(startup_args, verbose=True).run(self.crossgen_arguments.coreroot)
         if self.operation == CROSSGEN2:
             startup_args = [
-                os.path.join(self.crossgen_arguments.coreroot, 'corerun%s' % extension()),
-                os.path.join(self.crossgen_arguments.coreroot, 'crossgen2', 'crossgen2.dll'),
+                self.crossgen_arguments.crossgen2_apptorun(),
             ]
+            startup_args += self.crossgen_arguments.crossgen2_host_args()
             startup_args += self.crossgen_arguments.get_crossgen2_command_line()
             RunCommand(startup_args, verbose=True).run(self.crossgen_arguments.coreroot)
 

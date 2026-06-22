@@ -355,14 +355,12 @@ def logical_machine_to_queue(logical_machine: str, internal: bool, os_group: str
             return "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
         else:
             queue_map = {
-                "perftiger": "Windows.11.Amd64.Tiger.Perf",
-                "perftiger_crossgen": "Windows.11.Amd64.Tiger.Perf",
                 "perfpixel4a": "Windows.11.Amd64.Pixel.Perf",
                 "perfampere": "Windows.Server.Arm64.Perf",
                 "perfviper": "Windows.11.Amd64.Viper.Perf",
                 "cloudvm": "Windows.10.Amd64"
             }
-            return queue_map.get(logical_machine, "Windows.11.Amd64.Tiger.Perf")
+            return queue_map.get(logical_machine, "Windows.11.Amd64.Viper.Perf")
     else:
         if not internal:
             if architecture == "arm64":
@@ -374,11 +372,10 @@ def logical_machine_to_queue(logical_machine: str, internal: bool, os_group: str
                 "perfampere": "Ubuntu.2204.Arm64.Perf",
                 "perfcobalt": "AzureLinux.3.Cobalt.Arm64.Perf",
                 "perfiphone17": "Mac.iPhone.17.Perf",
-                "perftiger_crossgen": "Ubuntu.1804.Amd64.Tiger.Perf",
                 "perfviper": "Ubuntu.2204.Amd64.Viper.Perf",
                 "cloudvm": "Ubuntu.2204.Amd64"
             }
-            return queue_map.get(logical_machine, "Ubuntu.2204.Amd64.Tiger.Perf")
+            return queue_map.get(logical_machine, "Ubuntu.2204.Amd64.Viper.Perf")
 
 def get_bdn_arguments(
         run_categories: str,
