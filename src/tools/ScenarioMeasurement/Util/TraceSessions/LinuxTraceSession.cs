@@ -39,6 +39,15 @@ public class LinuxTraceSession : ITraceSession
     {
         foreach (var keyword in keywords)
         {
+            // Context switch events are never consumed on Linux (LinuxKernelParser.ContextSwitch is a
+            // no-op), but perfcollect still records every scheduler context switch. For long-running
+            // compilations such as single-threaded crossgen2 of large assemblies this produces an
+            // enormous trace, and "perfcollect stop" post-processing effectively hangs. Skip the keyword
+            // on Linux since the data is unused.
+            if (keyword == TraceSessionManager.KernelKeyword.ContextSwitch)
+            {
+                continue;
+            }
             perfCollect.AddKernelKeyword(kernelKeywords[keyword]);
         }
     }
