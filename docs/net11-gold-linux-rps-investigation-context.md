@@ -8,7 +8,8 @@ methodology, controlled rerun results, attribution calculations, local artifact
 locations, and recommended next steps.
 
 The analysis snapshot covers April 1 through August 12, 2026. The controlled
-Gold Linux reruns were performed on August 12, 2026.
+Gold Linux boundary reruns were performed on August 12, and the root-cause
+validation runs were performed on August 18, 2026.
 
 ## Critical guardrails
 
@@ -49,6 +50,21 @@ identical benchmark source within every product comparison:
   machine setup.
 - The May historical drops are environment, harness, or machine-state events,
   not product-build regressions.
+
+Exact parent/candidate validations isolated the four product cliffs:
+
+- April: ASP.NET PR
+  [#66200](https://github.com/dotnet/aspnetcore/pull/66200), enabling
+  runtime-async for SharedFx libraries.
+- June: ASP.NET PR
+  [#67082](https://github.com/dotnet/aspnetcore/pull/67082), which eagerly
+  materialized `HttpContext.Items` for routed requests.
+- July: runtime PR
+  [#130884](https://github.com/dotnet/runtime/pull/130884), changing
+  `System.IO.Pipelines` continuation scheduling.
+- August: runtime PR
+  [#131177](https://github.com/dotnet/runtime/pull/131177), changing Linux
+  socket-event dispatch.
 
 Across the four affected RPS KPIs, an equal-weight summary gives:
 
@@ -267,6 +283,71 @@ The May Fortunes Minimal control moved +2.30% between two identical-artifact
 batches, showing that present-day run state can cause a roughly 2% shift, but
 it did not reproduce the historical -5.53% regression.
 
+## Root-cause validation
+
+The component matrix first separated runtime and ASP.NET payload effects. Exact
+parent/candidate assemblies or complete shared-framework payloads were then
+overlaid onto otherwise identical builds and run in
+parent/candidate/candidate/parent order.
+
+| Cliff | Validated change | Exact RPS effect | t statistic | Controlled cliff explained |
+| --- | --- | ---: | ---: | ---: |
+| Apr 30 Plaintext Minimal | ASP.NET #66200 | -8.8962% | -86.5563 | 108.03% |
+| Jun 24 Plaintext Minimal | ASP.NET #67082 | -16.4077% | -52.7925 | 87.11% |
+| Jul 29 Plaintext Minimal | runtime #130884 | -6.6792% | -23.7810 | 74.26% |
+| Aug 11 Fortunes Platform | runtime #131177 | -17.4128% | -41.4368 | 108.17% |
+
+### April: SharedFx runtime async
+
+ASP.NET commit `f676e0fce8b54437b3100cdb824d8cd4e43fbfed` enabled
+runtime-async compilation for compatible Shared Framework projects. The full
+official ASP.NET payload changed from 8,052,680 to 7,336,294 RPS.
+
+Allocation increased from 3.2 MB/s to 229.7 MB/s, or from 0.40 to 31.31 bytes
+per request. The candidate payload also requires its compatible runtime; it
+fails on the later April runtime because
+`System.Runtime.CompilerServices.ExecutionAndSyncBlockStore` is no longer
+present.
+
+### June: eager `HttpContext.Items` creation
+
+The initial runtime PR #128384 hypothesis was rejected. The first successful
+VMR build containing it ran at 7.34M RPS with normal allocation.
+
+Full ASP.NET payload bisection instead found the exact adjacent ASP.NET commits:
+
+- Parent: `80b29b3f3b3bc5b9237b2949e70d6aefaa4531bd`.
+- Candidate: `d54f274f83350e4cef41eb6a4644f4550d212952`.
+
+PR #67082 changed `CsrfProtectionMiddleware` to write a sentinel into
+`HttpContext.Items` whenever a routed endpoint exists. That materializes the
+items dictionary on the Plaintext hot path even when no form or antiforgery
+result is consumed.
+
+Overlaying only `Microsoft.AspNetCore.dll` changed:
+
+- RPS: 7,678,255 to 6,418,432.
+- Allocation: 3.6 MB/s to 1.70 GB/s.
+- Allocation per request: 0.46 to 264.52 bytes.
+
+ASP.NET PR #67190 and PR #66807 were separately tested through exact Kestrel
+Core overlays and did not reproduce the cliff.
+
+### July: Pipelines continuation scheduling
+
+Runtime commit `2c87bd2b64912ec925d9c419c35fe82d5086b13f` changed
+`System.IO.Pipelines` locking, pooling, and continuation scheduling.
+`System.IO.Pipelines.dll` alone reduced RPS from 7,920,852 to 7,391,802.
+ThreadPool completed items increased 32.2%, and queue length increased 39.4%.
+
+### August: Linux socket dispatch
+
+Runtime commit `7da460b99b9c7e76b3060ef6da6687a008263ab9` moved Linux socket
+events into batched ThreadPool work-item trees. The Linux
+`System.Net.Sockets.dll` alone reduced RPS from 685,914 to 566,477.
+ThreadPool completed items increased 101.9%, lock contention increased 49.5%,
+and CPU fell 12.1%.
+
 ## Attribution to the current .NET 10 versus .NET 11 gap
 
 The latest paired baselines used:
@@ -387,6 +468,25 @@ $controlledRoot = Join-Path $rerunRoot 'controlled-20260812'
 Each controlled case also has a local JSON result and complete Crank log in the
 `controlled-20260812` directory.
 
+### Root-cause validation artifacts
+
+The root-cause directory is:
+
+```powershell
+$rootCauseRoot = Join-Path $analysisRoot 'gold-lin-rps-root-cause'
+```
+
+| Relative path | Purpose |
+| --- | --- |
+| `gold-lin-rps-root-cause\candidate-analysis.md` | Current authoritative root-cause report |
+| `gold-lin-rps-root-cause\component-splits-20260818\component-split-analysis.md` | Runtime/ASP.NET component attribution |
+| `gold-lin-rps-root-cause\candidate-runs-20260818\aspnet-66200-full-overlay\exact-candidate-analysis.md` | Exact April validation |
+| `gold-lin-rps-root-cause\candidate-runs-20260818\aspnet-67082-defaultbuilder\exact-candidate-analysis.md` | Exact June validation |
+| `gold-lin-rps-root-cause\candidate-runs-20260818\runtime-130884\exact-candidate-analysis.md` | Exact July validation |
+| `gold-lin-rps-root-cause\candidate-runs-20260818\runtime-131177-sockets\exact-candidate-analysis.md` | Exact August validation |
+| `gold-lin-rps-root-cause\june-full-overlay-probes` | June ASP.NET payload bisection |
+| `gold-lin-rps-root-cause\runtime-async-mechanism-20260818` | ReadyToRun-disabled April and June checks |
+
 ### Earlier Plaintext Platform reruns
 
 | Relative path | Purpose |
@@ -426,26 +526,19 @@ read-only access. Do not modify the extractor to perform writes.
 
 1. Refresh the extraction because the checked analysis ends on August 12,
    2026.
-2. Root-cause the April runtime range first. The same product boundary
-   reproduced across Fortunes, JSON, and Plaintext Minimal APIs, so one runtime
-   change may explain all three.
-3. Bisect or inspect the June Plaintext range
-   `d8addc1562ad98c7cab19ed654e9caabd1112d87` to
-   `ff45a39124929c3f7496f16420d2f0f0265252c4`.
-4. Bisect or inspect the July Plaintext range
-   `d2b524965e50619e8db62ed35943981830e1008d` to
-   `43cdb1f62dde1df80d5f9c3532c8cfacbbc40f53`.
-5. Bisect or inspect the August Fortunes Platform range
-   `7fb8cef14d9ae6bd729b04638f88d00f1ba7eb99` to
-   `a331ec1877b0aca43d294b3d3f91af49bf403ee9`.
-6. Correlate the RPS regressions with the associated Gold Linux latency
+2. Validate candidate fixes:
+   - Targeted runtime-async opt-outs or fixes for the April SharedFx paths.
+   - Avoiding unconditional `HttpContext.Items` materialization in June.
+   - Reverting or retuning the July Pipelines local-queue behavior.
+   - Reverting or retuning the August Linux socket batching.
+3. Correlate the RPS regressions with the associated Gold Linux latency
    regressions. The same root causes may explain both KPIs.
-7. Apply the same transition detection and controlled-rerun methodology to:
+4. Apply the same transition detection and controlled-rerun methodology to:
    - Gold Linux memory, latency, startup, and first-request regressions.
    - Gold Windows.
    - Cobalt Azure Linux 3.
    - Cobalt Azure Ubuntu.
-8. Produce a final cross-environment report only after rerunning material
+5. Produce a final cross-environment report only after rerunning material
    boundaries on current hardware.
 
 ## Caveats
