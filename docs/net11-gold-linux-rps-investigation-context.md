@@ -9,7 +9,8 @@ locations, and recommended next steps.
 
 The analysis snapshot covers April 1 through August 12, 2026. The controlled
 Gold Linux boundary reruns were performed on August 12, and the root-cause
-validation runs were performed on August 18, 2026.
+validation runs were performed on August 18, 2026. Major improvement
+boundaries were validated through August 20, 2026.
 
 ## Critical guardrails
 
@@ -65,6 +66,18 @@ Exact parent/candidate validations isolated the four product cliffs:
 - August: runtime PR
   [#131177](https://github.com/dotnet/runtime/pull/131177), changing Linux
   socket-event dispatch.
+
+The major improvement investigation is documented in
+[`net11-gold-linux-rps-improvements.md`](net11-gold-linux-rps-improvements.md):
+
+- July 3 Plaintext is fully explained by ASP.NET #67460 and #67488, which
+  compound to +22.433% RPS.
+- July 5's historical +5.383% Plaintext jump is not durable on current Gold
+  Linux. The exact #129474 and #130181 async changes combine to +1.126% RPS
+  while reducing allocation by 55.853%.
+- July 29's Fortunes gain is primarily runtime #130884. Local ThreadPool queues
+  improve Fortunes but sharply regress Plaintext, requiring an adaptive or
+  configurable scheduling policy rather than a universal revert.
 
 Across the four affected RPS KPIs, an equal-weight summary gives:
 
@@ -487,6 +500,25 @@ $rootCauseRoot = Join-Path $analysisRoot 'gold-lin-rps-root-cause'
 | `gold-lin-rps-root-cause\june-full-overlay-probes` | June ASP.NET payload bisection |
 | `gold-lin-rps-root-cause\runtime-async-mechanism-20260818` | ReadyToRun-disabled April and June checks |
 
+### Improvement validation artifacts
+
+The improvement directory is:
+
+```powershell
+$improvementRoot = Join-Path $analysisRoot 'gold-lin-rps-improvements'
+```
+
+| Relative path | Purpose |
+| --- | --- |
+| `gold-lin-rps-improvements\gold-lin-rps-improvement-findings.md` | Authoritative improvement report |
+| `gold-lin-rps-improvements\candidate-runs\aspnet-67460` | Exact July 3 CSRF-gating validation |
+| `gold-lin-rps-improvements\candidate-runs\aspnet-67488` | Exact July 3 `HttpContext.Items` validation |
+| `gold-lin-rps-improvements\candidate-runs\runtime-129474-crossgen2-combined-analysis.md` | Replicated #129474 result |
+| `gold-lin-rps-improvements\july5-component-analysis` | Official July 5 package and ReadyToRun matrix |
+| `gold-lin-rps-improvements\july5-exact-async-matrix` | Exact #129474 by #130181 interaction matrix |
+| `gold-lin-rps-improvements\candidate-runs\runtime-130884-fortunes` | Exact July 29 Fortunes validation |
+| `gold-lin-rps-improvements\pipelines-subset-runs\pipelines-cross-workload-analysis.md` | Plaintext/Fortunes scheduling tradeoff |
+
 ### Earlier Plaintext Platform reruns
 
 | Relative path | Purpose |
@@ -531,9 +563,11 @@ read-only access. Do not modify the extractor to perform writes.
    - Avoiding unconditional `HttpContext.Items` materialization in June.
    - Reverting or retuning the July Pipelines local-queue behavior.
    - Reverting or retuning the August Linux socket batching.
-3. Correlate the RPS regressions with the associated Gold Linux latency
+3. Prototype an adaptive or configurable Pipelines continuation-placement
+   policy and validate both Plaintext and Fortunes.
+4. Correlate the RPS regressions with the associated Gold Linux latency
    regressions. The same root causes may explain both KPIs.
-4. Apply the same transition detection and controlled-rerun methodology to:
+5. Apply the same transition detection and controlled-rerun methodology to:
    - Gold Linux memory, latency, startup, and first-request regressions.
    - Gold Windows.
    - Cobalt Azure Linux 3.
