@@ -3,6 +3,22 @@
 Three historical throughput improvements were investigated with controlled
 parent/candidate overlays and balanced reruns.
 
+## Annotated charts
+
+[![Gold Linux RPS and mean-latency history](images/net11-gold-linux-rps-latency-history.png)](images/net11-gold-linux-rps-latency-history.png)
+
+The historical chart includes all nine .NET 11 Gold Linux trend scenarios.
+Solid red and green annotations have exact parent/candidate commit evidence.
+Orange annotations are qualified, gray annotations had identical artifacts,
+and purple annotations are reproduced product boundaries whose exact commit
+has not been isolated.
+
+[![Exact commit effects on RPS and mean latency](images/net11-gold-linux-exact-commit-effects.png)](images/net11-gold-linux-exact-commit-effects.png)
+
+The exact-effect chart uses controlled parent/candidate results. Fortunes
+#130884 is intentionally shown as mixed: mean latency increased 2.22%, while
+P50 latency improved 16.20%.
+
 | Boundary | Historical change | Current result |
 | --- | ---: | --- |
 | July 3 Plaintext Minimal APIs | +21.051% | ASP.NET #67460 and #67488 compound to +22.433% |
