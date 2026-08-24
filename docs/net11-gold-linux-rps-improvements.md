@@ -19,6 +19,31 @@ The exact-effect chart uses controlled parent/candidate results. Fortunes
 #130884 is intentionally shown as mixed: mean latency increased 2.22%, while
 P50 latency improved 16.20%.
 
+## Current .NET 10 to .NET 11 outcome
+
+The latest paired Gold Linux baselines compare
+`.NET 10.0.11+e2f47b0110ed` with
+`.NET 11.0.0-rc.1.26411.119+7cdb21744590`. Across the four materially
+regressed RPS scenarios, the equal-weight RPS change is **-10.90%**.
+
+| Scenario | RPS: .NET 10 -> .NET 11 | Mean latency: .NET 10 -> .NET 11 | Regression causes and offsets |
+| --- | ---: | ---: | --- |
+| Plaintext Minimal APIs | 8.032M -> 6.920M (**-13.84%**) | 0.356 -> 0.539 ms (**+51.52%**) | Proven regressions: ASP.NET [#66200](https://github.com/dotnet/aspnetcore/pull/66200) `f676e0fc` (**-8.90% RPS**), ASP.NET [#67082](https://github.com/dotnet/aspnetcore/pull/67082) `d54f274f` (**-16.41%**), and runtime [#130884](https://github.com/dotnet/runtime/pull/130884) `2c87bd2b` (**-6.68%**). Proven offsets: ASP.NET #67460 (**+4.65%**), ASP.NET #67488 (**+16.95%**), and runtime #129474 plus #130181 (**+1.13%**). The known exact chain compounds to approximately **-12.04%**, leaving about **-2.04%** multiplicative residual. |
+| Json Minimal APIs | 1.617M -> 1.583M (**-2.09%**) | 0.164 -> 0.179 ms (**+8.77%**) | The April runtime-async boundary controlled at **-3.12% RPS** and has the same allocation signature as #66200; exact commit isolation was performed on Plaintext. Runtime #130884 offsets **+1.79% RPS** and **-0.56% mean latency**. A small residual remains. |
+| Fortunes Minimal APIs | 526K -> 492K (**-6.58%**) | 0.529 -> 0.563 ms (**+6.57%**) | The April runtime-async boundary controlled at **-4.77% RPS** and matches the #66200 signature. No later exact offset was isolated; **1.81 .NET 10 index points** remain unattributed. |
+| Fortunes Platform | 719K -> 568K (**-21.07%**) | 0.748 -> 1.100 ms (**+47.05%**) | Runtime [#131177](https://github.com/dotnet/runtime/pull/131177) `7da460b9` is a proven **-17.41% RPS / +20.68% mean-latency** regression. Runtime #130884 offsets **+10.97% RPS** and improves P50 latency **16.20%**, although mean latency rises 2.22%. The remaining gap is not assigned to an exact product commit; the May historical drop used identical artifacts. |
+| Plaintext Platform | 21.621M -> 21.357M (**-1.22%**) | 0.405 -> 0.421 ms (**+3.76%**) | The April product boundary reproduced at **-5.61% RPS**, but its exact commit remains unresolved. Later product improvements recover most of it. The May and August historical drops used identical artifacts and are environment or harness effects. |
+| Caching Platform | 907K -> 899K (**-0.88%**) | 0.291 -> 0.313 ms (**+7.47%**) | No material RPS regression. The latency-only regression has not been commit-bisected. |
+| Json Platform | 2.160M -> 2.179M (**+0.85%**) | 0.229 -> 0.229 ms (**+0.03%**) | Overall neutral to improved; no material regression to attribute. |
+| Multiple Queries Platform | 81.6K -> 83.3K (**+2.04%**) | 6.25 -> 6.12 ms (**-2.08%**) | Overall improved. |
+| Updates Platform | 43.1K -> 43.7K (**+1.51%**) | 12.23 -> 11.98 ms (**-2.04%**) | Overall improved. |
+
+The exact effects compound and can interact, so their percentages should not
+be added directly. For Json and Fortunes Minimal APIs, #66200 is the
+best-supported commit attribution from the shared April boundary and matching
+allocation signature; the exact parent/candidate payload proof was run on
+Plaintext Minimal APIs.
+
 | Boundary | Historical change | Current result |
 | --- | ---: | --- |
 | July 3 Plaintext Minimal APIs | +21.051% | ASP.NET #67460 and #67488 compound to +22.433% |
